@@ -1,18 +1,14 @@
-#include<opencv/cvaux.h>
-#include<opencv/highgui.h>
-#include<opencv/cxcore.h>
-#include<opencv/cv.h>
-
 
 #include<stdio.h>
 #include<stdlib.h>
-#include <vector>
 #define OUT stdout
 
+#include<DisplayImage.h>
 using namespace std;
 int sliderPosition = 0;
 const char * windowName = "windowExample";
-vector<IplImage *> frameVector;
+
+FrameDeck frames;
 
 char * getArguments(int argc, char * argv[])
 {
@@ -26,8 +22,7 @@ char * getArguments(int argc, char * argv[])
 		int i;
 		fprintf( OUT, "Ignoring the following arguments: " );
 		for( i = 2; i < argc; i++ )
-		{
-			fprintf( OUT, "%s ", argv[i] );
+		{			fprintf( OUT, "%s ", argv[i] );
 		}
 		fprintf( OUT, "\n" );
 	}
@@ -35,14 +30,15 @@ char * getArguments(int argc, char * argv[])
 }
 
 
-vector<IplImage *> queryAllFrames( const char * filename )
+FrameDeck queryAllFrames( const char * filename )
 {
 	CvCapture * capture = cvCaptureFromFile( filename );
 	vector<IplImage *> frames;
+	FrameDeck j;
 	if( capture == NULL )
 	{
 		fprintf( OUT, "Could not open the file\n" );
-		return frames;
+		return j;
 	}
 	IplImage * temp = cvQueryFrame( capture );
 	while( temp != NULL)
@@ -50,26 +46,36 @@ vector<IplImage *> queryAllFrames( const char * filename )
 		frames.push_back( cvCloneImage( temp ) );
 		temp = cvQueryFrame( capture );
 	}
+	j.fps = 0;
+	j.fps = cvGetCaptureProperty( capture, CV_CAP_PROP_FPS );
+	if( !j.fps ) j.fps = 50;
+	j.frameVector = frames;
 	cvReleaseCapture( &capture );
-	return frames;
+
+	return j;
 }
 
-int displayFramesInWindow( vector<IplImage *> frames, const char * windowName )
+int displayFramesInWindow( FrameDeck frames, const char * windowName )
 {
 	unsigned int i;
-	for( i = 0; i < frames.size(); i++ )
+	for( i = 0; i < frames.frameVector.size(); i++ )
 	{
-		cvShowImage( windowName, frames[i] );
-		cvWaitKey( 20 );
+		cvShowImage( windowName, frames.frameVector[i] );
+		cvWaitKey( 1000 / frames.fps );
 	}
 	return 0;
 }
 
+/*int saveVideo( char * filename, FrameDeck frames )
+{
+
+}*/
+
 void updateFrame( int position )
 {
-	cvShowImage( windowName, frameVector[position] );
+	cvShowImage( windowName, frames.frameVector[position] );
 }
-
+/*
 int main(int argc, char * argv[])
 {
 	char * filename = getArguments( argc, argv );
@@ -79,9 +85,9 @@ int main(int argc, char * argv[])
 
 	cvNamedWindow( windowName, CV_WINDOW_AUTOSIZE);
 
-	frameVector = queryAllFrames( filename );
+	frames = queryAllFrames( filename );
 
-	cvCreateTrackbar( trackbarName, windowName, &sliderPosition, frameVector.size() - 1, (CvTrackbarCallback) updateFrame );
+	cvCreateTrackbar( trackbarName, windowName, &sliderPosition, frames.frameVector.size() - 1, (CvTrackbarCallback) updateFrame );
 	int key;
 	while( true )
 	{
@@ -93,15 +99,15 @@ int main(int argc, char * argv[])
 		}
 		else if( key == 'l' ) // right
 		{
-			if( sliderPosition < frameVector.size() - 1 )
+			if( sliderPosition < frames.frameVector.size() - 1 )
 				cvSetTrackbarPos( trackbarName, windowName, sliderPosition + 1 );
 		}
 		else if( key == 'i' ) // up
 		{
-			if( sliderPosition < frameVector.size() - 10 )
+			if( sliderPosition < frames.frameVector.size() - 10 )
 				cvSetTrackbarPos( trackbarName, windowName, sliderPosition + 10 );
 			else
-				cvSetTrackbarPos( trackbarName, windowName, frameVector.size() - 1 );
+				cvSetTrackbarPos( trackbarName, windowName, frames.frameVector.size() - 1 );
 		}
 		else if( key == 'k' ) // down
 		{
@@ -118,5 +124,6 @@ int main(int argc, char * argv[])
 
 	return 0;
 }
+*/
 
 
